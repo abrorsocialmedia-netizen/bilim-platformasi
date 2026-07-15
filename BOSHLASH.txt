@@ -1,0 +1,40 @@
+========================================
+  O'QUV PLATFORMASI (LMS) - QANDAY OCHILADI
+========================================
+
+TALAB:
+  1. Node.js o'rnatilgan bo'lsin  -> https://nodejs.org (LTS)
+  2. PostgreSQL ishlab tursin (siz lms_db bazasini yaratdingiz)
+
+ISHGA TUSHIRISH (Windows):
+  Shu papkadagi  START.bat  faylini ikki marta bosing (ochish).
+  Hammasi o'zi bajariladi:
+    - kutubxonalar o'rnatiladi
+    - baza jadvallari yaratiladi
+    - demo ma'lumot yuklanadi
+    - backend va frontend ishga tushadi
+    - brauzer http://localhost:3000 da ochiladi
+
+TEST AKKAUNTLARI (parol hammasida: parol123):
+    admin@lms.uz     - markaz egasi (admin panel)
+    ustoz@lms.uz     - o'qituvchi
+    student@lms.uz   - o'quvchi
+
+AGAR START.bat "bazaga ulanib bo'lmadi" desa:
+  apps\backend\.env  faylini oching va DATABASE_URL to'g'riligini tekshiring:
+  DATABASE_URL="postgresql://lms_user:lms12345@localhost:5432/lms_db?schema=public"
+  (agar Postgres porti 5432 bo'lmasa yoki parol boshqa bo'lsa - moslang)
+
+QO'LDA ISHGA TUSHIRISH (agar START.bat ishlamasa):
+  Terminal 1:
+    cd apps\backend
+    npm install
+    npx prisma migrate deploy
+    npm run seed
+    npm run start:dev
+  Terminal 2:
+    cd apps\frontend
+    npm install
+    npm run dev
+  Keyin brauzerda: http://localhost:3000
+========================================

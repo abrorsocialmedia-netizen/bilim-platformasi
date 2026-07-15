@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  teacher
+  admin
+}
+
+enum UserStatus {
+  pending
+  approved
+  blocked
+}
+
+enum EnrollmentStatus {
+  pending
+  active
+  expired
+  blocked
+  rejected
+}
+
+enum QuestionTarget {
+  teacher
+  ai
+}
+
+enum AnswerAuthorType {
+  teacher
+  ai
+}
+
+enum DeviceStatus {
+  active
+  revoked
+}
+
+enum PaymentProvider {
+  click
+  payme
+  manual
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+}
+
+model User {
+  id                         String     @id @default(uuid())
+  fullName                   String     @map("full_name")
+  email                      String     @unique
+  phone                      String?
+  passwordHash               String     @map("password_hash")
+  role                       UserRole   @default(student)
+  emailVerified              Boolean    @default(false) @map("email_verified")
+  emailVerificationCode      String?    @map("email_verification_code")
+  emailVerificationExpiresAt DateTime?  @map("email_verification_expires_at")
+  passwordResetToken         String?    @map("password_reset_token")
+  passwordResetExpiresAt     DateTime?  @map("password_reset_expires_at")
+  status                     UserStatus @default(pending)
+  createdAt                  DateTime   @default(now()) @map("created_at")
+  updatedAt                  DateTime   @updatedAt @map("updated_at")
+
+  enrollments         Enrollment[]   @relation("StudentEnrollments")
+  approvedEnrollments Enrollment[]   @relation("ApprovedByUser")
+  questions           Question[]
+  answers             Answer[]
+  certificates        Certificate[]
+  xpEvents            XpEvent[]
+  stats               UserStats?
+  activityLogs        ActivityLog[]
+  devices             Device[]
+  notifications       Notification[]
+  telegramLink        TelegramLink?
+  payments            Payment[]
+  taughtCourses       Course[]       @relation("TeacherCourses")
+
+  @@map("users")
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  coverUrl     String?  @map("cover_url")
+  price        Decimal  @default(0) @db.Decimal(12, 2)
+  isFree       Boolean  @default(false) @map("is_free")
+  durationDays Int      @default(120) @map("duration_days")
+  isCertified  Boolean  @default(false) @map("is_certified")
+  aiQaEnabled  Boolean  @default(false) @map("ai_qa_enabled")
+  status       String   @default("draft") // draft|published
+  teacherId    String?  @map("teacher_id")
+  teacher      User?    @relation("TeacherCourses", fields: [teacherId], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  modules      Module[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+  payments     Payment[]
+
+  @@map("courses")
+}
+
+model Module {
+  id       String @id @default(uuid())
+  courseId String @map("course_id")
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int    @default(0)
+
+  lessons Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id          String  @id @default(uuid())
+  moduleId    String  @map("module_id")
+  module      Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  videoRef    String? @map("video_ref")
+  durationSec Int?    @map("duration_sec")
+  order       Int     @default(0)
+
+  materials LessonMaterial[]
+  progress  LessonProgress[]
+  questions Question[]
+
+  @@map("lessons")
+}
+
+model LessonMaterial {
+  id       String @id @default(uuid())
+  lessonId String @map("lesson_id")
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type     String @default("pdf")
+  fileUrl  String @map("file_url")
+  title    String
+
+  @@map("lesson_materials")
+}
+
+model Enrollment {
+  id              String           @id @default(uuid())
+  userId          String           @map("user_id")
+  user            User             @relation("StudentEnrollments", fields: [userId], references: [id])
+  courseId        String           @map("course_id")
+  course          Course           @relation(fields: [courseId], references: [id])
+  startDate       DateTime?        @map("start_date")
+  expiresAt       DateTime?        @map("expires_at")
+  status          EnrollmentStatus @default(pending)
+  progressPercent Int              @default(0) @map("progress_percent")
+  approvedById    String?          @map("approved_by")
+  approvedBy      User?            @relation("ApprovedByUser", fields: [approvedById], references: [id])
+  approvedAt      DateTime?        @map("approved_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  lessonProgress LessonProgress[]
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id           String     @id @default(uuid())
+  enrollmentId String     @map("enrollment_id")
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String     @map("lesson_id")
+  lesson       Lesson     @relation(fields: [lessonId], references: [id])
+  completed    Boolean    @default(false)
+  completedAt  DateTime?  @map("completed_at")
+
+  @@unique([enrollmentId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Question {
+  id        String         @id @default(uuid())
+  lessonId  String         @map("lesson_id")
+  lesson    Lesson         @relation(fields: [lessonId], references: [id])
+  userId    String         @map("user_id")
+  user      User           @relation(fields: [userId], references: [id])
+  target    QuestionTarget @default(teacher)
+  text      String
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  answers Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id         String           @id @default(uuid())
+  questionId String           @map("question_id")
+  question   Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorType AnswerAuthorType @map("author_type")
+  authorId   String?          @map("author_id")
+  author     User?            @relation(fields: [authorId], references: [id])
+  text       String
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@map("answers")
+}
+
+model Certificate {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  courseId   String   @map("course_id")
+  course     Course   @relation(fields: [courseId], references: [id])
+  certNumber String   @unique @map("cert_number")
+  issuedAt   DateTime @default(now()) @map("issued_at")
+  pdfUrl     String?  @map("pdf_url")
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+model XpEvent {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  points    Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("xp_events")
+}
+
+model UserStats {
+  userId         String    @id @map("user_id")
+  user           User      @relation(fields: [userId], references: [id])
+  totalXp        Int       @default(0) @map("total_xp")
+  rank           Int?
+  streakDays     Int       @default(0) @map("streak_days")
+  lastActiveDate DateTime? @map("last_active_date")
+
+  @@map("user_stats")
+}
+
+model ActivityLog {
+  id      String   @id @default(uuid())
+  userId  String   @map("user_id")
+  user    User     @relation(fields: [userId], references: [id])
+  date    DateTime @db.Date
+  minutes Int      @default(0)
+
+  @@unique([userId, date])
+  @@map("activity_logs")
+}
+
+model Device {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  user             User         @relation(fields: [userId], references: [id])
+  deviceInfo       String       @map("device_info")
+  ip               String?
+  refreshTokenHash String?      @map("refresh_token_hash")
+  lastActive       DateTime     @default(now()) @map("last_active")
+  status           DeviceStatus @default(active)
+
+  @@map("devices")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  text      String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model TelegramLink {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  user           User     @relation(fields: [userId], references: [id])
+  telegramChatId String   @map("telegram_chat_id")
+  linkedAt       DateTime @default(now()) @map("linked_at")
+
+  @@map("telegram_links")
+}
+
+model Payment {
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  user       User            @relation(fields: [userId], references: [id])
+  courseId   String          @map("course_id")
+  course     Course          @relation(fields: [courseId], references: [id])
+  provider   PaymentProvider
+  amount     Decimal         @db.Decimal(12, 2)
+  status     PaymentStatus   @default(pending)
+  externalId String?         @map("external_id")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@map("payments")
+}
+
+model InstanceConfig {
+  id               Int     @id @default(1)
+  brandName        String  @default("O'quv Platformasi") @map("brand_name")
+  logoUrl          String? @map("logo_url")
+  primaryColor     String  @default("#4F46E5") @map("primary_color")
+  domain           String?
+  telegramBotToken String? @map("telegram_bot_token")
+  ownerChatId      String? @map("owner_chat_id")
+  featureFlags     Json    @default("{\"aiQa\": false, \"forum\": false, \"onlinePayments\": false, \"gamification\": true, \"certificates\": true}") @map("feature_flags")
+
+  @@map("instance_config")
+}
