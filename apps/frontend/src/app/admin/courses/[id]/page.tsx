@@ -3,14 +3,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import { toast } from 'sonner';
+import { FileUp, Trash2, Upload } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
 import type { CourseDetail } from '@/lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminCourseEditorPage() {
   const params = useParams<{ id: string }>();
   const [course, setCourse] = useState<CourseDetail | null>(null);
-  const [error, setError] = useState('');
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [newLessonTitle, setNewLessonTitle] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<string | null>(null);
@@ -19,7 +25,7 @@ export default function AdminCourseEditorPage() {
     api
       .get(`/admin/courses/${params.id}`)
       .then(({ data }) => setCourse(data))
-      .catch((err) => setError(apiErrorMessage(err)));
+      .catch((err) => toast.error(apiErrorMessage(err)));
   }, [params.id]);
 
   useEffect(() => {
@@ -30,6 +36,7 @@ export default function AdminCourseEditorPage() {
     if (!course) return;
     const path = course.status === 'published' ? 'unpublish' : 'publish';
     await api.patch(`/admin/courses/${course.id}/${path}`);
+    toast.success(course.status === 'published' ? 'Nashrdan olindi' : 'Nashr qilindi');
     load();
   }
 
@@ -70,9 +77,10 @@ export default function AdminCourseEditorPage() {
       });
       await axios.put(data.uploadUrl, file, { headers: { 'Content-Type': file.type || 'video/mp4' } });
       await api.patch(`/admin/lessons/${lessonId}`, { videoRef: data.key });
+      toast.success('Video yuklandi');
       load();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Video yuklashda xatolik'));
+      toast.error(apiErrorMessage(err, 'Video yuklashda xatolik'));
     } finally {
       setUploading(null);
     }
@@ -88,26 +96,19 @@ export default function AdminCourseEditorPage() {
       });
       await axios.put(data.uploadUrl, file, { headers: { 'Content-Type': file.type || 'application/pdf' } });
       await api.post('/admin/materials', { lessonId, title: file.name, fileUrl: data.key, type: 'pdf' });
+      toast.success('Fayl yuklandi');
       load();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Fayl yuklashda xatolik'));
+      toast.error(apiErrorMessage(err, 'Fayl yuklashda xatolik'));
     } finally {
       setUploading(null);
     }
   }
 
-  if (error) {
-    return (
-      <AppShell roles={['admin']}>
-        <p className="text-red-600">{error}</p>
-      </AppShell>
-    );
-  }
-
   if (!course) {
     return (
       <AppShell roles={['admin']}>
-        <p className="text-gray-400">Yuklanmoqda...</p>
+        <Skeleton className="h-64 w-full rounded-xl" />
       </AppShell>
     );
   }
@@ -116,41 +117,38 @@ export default function AdminCourseEditorPage() {
     <AppShell roles={['admin']}>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{course.title}</h1>
-          <span
-            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${
-              course.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-            }`}
-          >
+          <h1 className="text-2xl font-bold tracking-tight">{course.title}</h1>
+          <Badge variant={course.status === 'published' ? 'success' : 'secondary'} className="mt-1">
             {course.status === 'published' ? 'Nashr etilgan' : 'Qoralama'}
-          </span>
+          </Badge>
         </div>
-        <button onClick={togglePublish} className="rounded-md border px-4 py-2 text-sm hover:bg-gray-50">
-          {course.status === 'published' ? "Nashrdan olib tashlash" : 'Nashr qilish'}
-        </button>
+        <Button variant="outline" onClick={togglePublish}>
+          {course.status === 'published' ? 'Nashrdan olib tashlash' : 'Nashr qilish'}
+        </Button>
       </div>
 
       <div className="space-y-6">
         {course.modules.map((m) => (
-          <div key={m.id} className="rounded-lg border bg-white">
-            <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2">
+          <Card key={m.id}>
+            <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2.5">
               <span className="font-medium">{m.title}</span>
-              <button onClick={() => deleteModule(m.id)} className="text-xs text-red-600 hover:underline">
-                Modulni o&apos;chirish
-              </button>
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteModule(m.id)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
             <div className="divide-y">
               {m.lessons.map((l) => (
                 <div key={l.id} className="px-4 py-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{l.title}</span>
-                    <button onClick={() => deleteLesson(l.id)} className="text-xs text-red-600 hover:underline">
-                      O&apos;chirish
-                    </button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteLesson(l.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                    <span>{l.videoRef ? '✅ Video yuklangan' : '⬜ Video yo\'q'}</span>
-                    <label className="cursor-pointer text-indigo-600 hover:underline">
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <Badge variant={l.videoRef ? 'success' : 'outline'}>{l.videoRef ? 'Video yuklangan' : "Video yo'q"}</Badge>
+                    <label className="inline-flex cursor-pointer items-center gap-1 font-medium text-primary hover:underline">
+                      <Upload className="h-3.5 w-3.5" />
                       {uploading === l.id ? 'Yuklanmoqda...' : 'Video yuklash'}
                       <input
                         type="file"
@@ -159,7 +157,8 @@ export default function AdminCourseEditorPage() {
                         onChange={(e) => e.target.files?.[0] && uploadVideo(l.id, e.target.files[0])}
                       />
                     </label>
-                    <label className="cursor-pointer text-indigo-600 hover:underline">
+                    <label className="inline-flex cursor-pointer items-center gap-1 font-medium text-primary hover:underline">
+                      <FileUp className="h-3.5 w-3.5" />
                       PDF qo&apos;shish
                       <input
                         type="file"
@@ -172,29 +171,29 @@ export default function AdminCourseEditorPage() {
                 </div>
               ))}
             </div>
-            <form onSubmit={(e) => addLesson(m.id, e)} className="flex gap-2 border-t p-3">
-              <input
-                placeholder="Yangi dars nomi"
-                className="flex-1 rounded-md border px-3 py-1.5 text-sm"
-                value={newLessonTitle[m.id] ?? ''}
-                onChange={(e) => setNewLessonTitle({ ...newLessonTitle, [m.id]: e.target.value })}
-              />
-              <button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700">
-                Qo&apos;shish
-              </button>
-            </form>
-          </div>
+            <CardContent className="border-t p-3">
+              <form onSubmit={(e) => addLesson(m.id, e)} className="flex gap-2">
+                <Input
+                  placeholder="Yangi dars nomi"
+                  value={newLessonTitle[m.id] ?? ''}
+                  onChange={(e) => setNewLessonTitle({ ...newLessonTitle, [m.id]: e.target.value })}
+                />
+                <Button type="submit" size="sm">
+                  Qo&apos;shish
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       <form onSubmit={addModule} className="mt-6 flex gap-2">
-        <input
+        <Input
           placeholder="Yangi modul nomi (masalan, 1-KUN)"
-          className="flex-1 rounded-md border px-3 py-2 text-sm"
           value={newModuleTitle}
           onChange={(e) => setNewModuleTitle(e.target.value)}
         />
-        <button className="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">Modul qo&apos;shish</button>
+        <Button type="submit">Modul qo&apos;shish</Button>
       </form>
     </AppShell>
   );

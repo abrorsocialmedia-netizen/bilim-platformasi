@@ -36,7 +36,7 @@ export function ProtectedVideoPlayer({ src, watermarkText }: { src: string; wate
 
   return (
     <div
-      className="relative aspect-video w-full overflow-hidden rounded-lg bg-black select-none"
+      className="relative aspect-video w-full select-none overflow-hidden rounded-xl bg-black shadow-lg"
       onContextMenu={(e) => e.preventDefault()}
     >
       <video

@@ -2,7 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { GraduationCap, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const studentLinks = [
   { href: '/dashboard', label: 'Bosh sahifa' },
@@ -11,7 +23,6 @@ const studentLinks = [
   { href: '/leaderboard', label: 'Reyting' },
   { href: '/notifications', label: 'Bildirishnomalar' },
   { href: '/devices', label: 'Qurilmalar' },
-  { href: '/profile', label: 'Profil' },
 ];
 
 const adminLinks = [
@@ -20,6 +31,16 @@ const adminLinks = [
   { href: '/admin/students', label: "O'quvchilar" },
   { href: '/admin/settings', label: 'Sozlamalar' },
 ];
+
+function initials(name?: string) {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -31,36 +52,63 @@ export function Navbar() {
   const links = user.role === 'admin' ? adminLinks : studentLinks;
 
   return (
-    <nav className="border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6">
-          <span className="text-lg font-bold text-indigo-600">O&apos;quv Platformasi</span>
-          <div className="hidden gap-4 md:flex">
+    <nav className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2 text-base font-bold text-primary">
+            <GraduationCap className="h-5 w-5" />
+            O&apos;quv Platformasi
+          </Link>
+          <div className="hidden gap-1 md:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm ${
-                  pathname === link.href ? 'font-semibold text-indigo-600' : 'text-gray-600 hover:text-indigo-600'
-                }`}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                  pathname === link.href
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                )}
               >
                 {link.label}
               </Link>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">{user.fullName}</span>
-          <button
-            onClick={() => {
-              logout();
-              router.replace('/login');
-            }}
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
-          >
-            Chiqish
-          </button>
-        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 px-2">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(user.fullName)}</AvatarFallback>
+              </Avatar>
+              <span className="hidden text-sm font-medium sm:inline">{user.fullName}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {user.role !== 'admin' && (
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="cursor-pointer">
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  Profil
+                </Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={() => {
+                logout();
+                router.replace('/login');
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Chiqish
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );

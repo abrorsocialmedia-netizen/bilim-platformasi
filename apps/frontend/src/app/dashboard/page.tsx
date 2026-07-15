@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArrowRight, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
 import { useAuthStore } from '@/store/auth';
 import type { MyCourse } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -24,63 +30,68 @@ export default function DashboardPage() {
 
   return (
     <AppShell roles={['student', 'teacher']}>
-      <h1 className="mb-1 text-2xl font-bold">Salom, {user?.fullName}!</h1>
-      <p className="mb-6 text-gray-500">O&apos;rganishni davom ettiring.</p>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight">Salom, {user?.fullName}!</h1>
+      <p className="mb-6 text-muted-foreground">O&apos;rganishni davom ettiring.</p>
 
       {loading ? (
-        <p className="text-gray-400">Yuklanmoqda...</p>
+        <div className="space-y-4">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-6 w-40" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+        </div>
       ) : (
         <>
           {inProgress && (
-            <div className="mb-8 rounded-xl bg-indigo-600 p-6 text-white">
-              <p className="text-sm text-indigo-100">Davom etilayotgan kurs</p>
-              <h2 className="mt-1 text-xl font-bold">{inProgress.course.title}</h2>
-              <div className="mt-4 h-2 w-full rounded-full bg-indigo-400/50">
-                <div
-                  className="h-2 rounded-full bg-white"
-                  style={{ width: `${inProgress.progressPercent}%` }}
-                />
-              </div>
-              <p className="mt-2 text-sm">{inProgress.progressPercent}% bajarildi</p>
-              <Link
-                href={`/courses/${inProgress.course.id}`}
-                className="mt-4 inline-block rounded-md bg-white px-4 py-2 text-sm font-medium text-indigo-600"
-              >
-                Davom ettirish
-              </Link>
-            </div>
+            <Card className="mb-8 overflow-hidden border-none bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
+              <CardContent className="p-6">
+                <p className="text-sm text-primary-foreground/80">Davom etilayotgan kurs</p>
+                <h2 className="mt-1 text-xl font-bold">{inProgress.course.title}</h2>
+                <Progress value={inProgress.progressPercent} className="mt-4 bg-primary-foreground/20 [&>div]:bg-white" />
+                <p className="mt-2 text-sm text-primary-foreground/90">{inProgress.progressPercent}% bajarildi</p>
+                <Button asChild variant="secondary" size="sm" className="mt-4">
+                  <Link href={`/courses/${inProgress.course.id}`}>
+                    Davom ettirish <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
-          <h2 className="mb-4 text-lg font-semibold">Mening kurslarim</h2>
+          <h2 className="mb-4 text-lg font-semibold tracking-tight">Mening kurslarim</h2>
           {myCourses.length === 0 && (
-            <p className="text-gray-500">
-              Hali hech qanday kursga yozilmagansiz.{' '}
-              <Link href="/courses" className="text-indigo-600 hover:underline">
-                Katalogni ko&apos;rish
-              </Link>
-            </p>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+                <BookOpen className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Hali hech qanday kursga yozilmagansiz.</p>
+                <Button asChild size="sm">
+                  <Link href="/courses">Katalogni ko&apos;rish</Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {myCourses.map((mc) => (
-              <Link
-                key={mc.enrollmentId}
-                href={mc.status === 'active' ? `/courses/${mc.course.id}` : '/pending-approval'}
-                className="rounded-lg border bg-white p-4 hover:shadow-md"
-              >
-                <h3 className="font-semibold">{mc.course.title}</h3>
-                <p className="mt-1 text-xs">
-                  <StatusBadge status={mc.status} />
-                </p>
-                {mc.status === 'active' && (
-                  <>
-                    <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100">
-                      <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${mc.progressPercent}%` }} />
+              <Link key={mc.enrollmentId} href={mc.status === 'active' ? `/courses/${mc.course.id}` : '/pending-approval'}>
+                <Card className="h-full transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-base">{mc.course.title}</CardTitle>
+                      <StatusBadge status={mc.status} />
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      {mc.progressPercent}% · {mc.daysLeft} kun qoldi
-                    </p>
-                  </>
-                )}
+                  </CardHeader>
+                  {mc.status === 'active' && (
+                    <CardContent className="pt-0">
+                      <Progress value={mc.progressPercent} className="h-1.5" />
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {mc.progressPercent}% &middot; {mc.daysLeft} kun qoldi
+                      </p>
+                    </CardContent>
+                  )}
+                </Card>
               </Link>
             ))}
           </div>
@@ -91,13 +102,17 @@ export default function DashboardPage() {
 }
 
 function StatusBadge({ status }: { status: MyCourse['status'] }) {
-  const map: Record<MyCourse['status'], { text: string; className: string }> = {
-    pending: { text: 'Tasdiq kutilmoqda', className: 'text-amber-600' },
-    active: { text: 'Faol', className: 'text-green-600' },
-    expired: { text: 'Muddati tugagan', className: 'text-red-600' },
-    blocked: { text: 'Bloklangan', className: 'text-red-600' },
-    rejected: { text: 'Rad etilgan', className: 'text-red-600' },
+  const map: Record<MyCourse['status'], { text: string; variant: 'success' | 'warning' | 'destructive' }> = {
+    pending: { text: 'Tasdiq kutilmoqda', variant: 'warning' },
+    active: { text: 'Faol', variant: 'success' },
+    expired: { text: 'Muddati tugagan', variant: 'destructive' },
+    blocked: { text: 'Bloklangan', variant: 'destructive' },
+    rejected: { text: 'Rad etilgan', variant: 'destructive' },
   };
   const info = map[status];
-  return <span className={info.className}>{info.text}</span>;
+  return (
+    <Badge variant={info.variant} className="shrink-0">
+      {info.text}
+    </Badge>
+  );
 }

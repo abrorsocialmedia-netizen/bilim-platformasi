@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 
 export function AuthGuard({
@@ -30,7 +31,9 @@ export function AuthGuard({
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-gray-400">Yuklanmoqda...</div>
+      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
     );
   }
 

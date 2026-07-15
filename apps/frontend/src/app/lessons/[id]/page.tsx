@@ -3,10 +3,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { ArrowLeft, ChevronLeft, ChevronRight, FileText, MessageSquare } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
 import { ProtectedVideoPlayer } from '@/components/ProtectedVideoPlayer';
 import type { CourseDetail, LessonDto } from '@/lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface QuestionDto {
   id: string;
@@ -28,12 +34,10 @@ export default function LessonPlayerPage() {
   const [questionText, setQuestionText] = useState('');
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const { data: lessonData } = await api.get(`/lessons/${params.id}`);
       setLesson(lessonData);
@@ -50,7 +54,7 @@ export default function LessonPlayerPage() {
       }
       setQuestions(questionsData);
     } catch (err) {
-      setError(apiErrorMessage(err, "Darsni yuklashda xatolik"));
+      toast.error(apiErrorMessage(err, 'Darsni yuklashda xatolik'));
     } finally {
       setLoading(false);
     }
@@ -70,8 +74,9 @@ export default function LessonPlayerPage() {
     try {
       await api.post(`/lessons/${params.id}/complete`);
       setCompleted(true);
+      toast.success('Dars belgilandi!');
     } catch (err) {
-      setError(apiErrorMessage(err));
+      toast.error(apiErrorMessage(err));
     } finally {
       setCompleting(false);
     }
@@ -88,15 +93,7 @@ export default function LessonPlayerPage() {
   if (loading) {
     return (
       <AppShell roles={['student', 'teacher']}>
-        <p className="text-gray-400">Yuklanmoqda...</p>
-      </AppShell>
-    );
-  }
-
-  if (error && !lesson) {
-    return (
-      <AppShell roles={['student', 'teacher']}>
-        <p className="text-red-600">{error}</p>
+        <Skeleton className="aspect-video w-full rounded-xl" />
       </AppShell>
     );
   }
@@ -106,21 +103,25 @@ export default function LessonPlayerPage() {
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div>
           {lesson?.module.course.id && (
-            <Link href={`/courses/${lesson.module.course.id}`} className="mb-3 inline-block text-sm text-indigo-600 hover:underline">
-              ← {lesson.module.course.title}
+            <Link
+              href={`/courses/${lesson.module.course.id}`}
+              className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              {lesson.module.course.title}
             </Link>
           )}
-          <h1 className="mb-4 text-xl font-bold">{lesson?.title}</h1>
+          <h1 className="mb-4 text-xl font-bold tracking-tight">{lesson?.title}</h1>
 
           {videoUrl ? (
             <ProtectedVideoPlayer src={videoUrl} watermarkText={watermark} />
           ) : (
-            <div className="flex aspect-video items-center justify-center rounded-lg bg-gray-100 text-gray-400">
+            <div className="flex aspect-video items-center justify-center rounded-xl bg-muted text-muted-foreground">
               Video mavjud emas
             </div>
           )}
 
-          {lesson?.description && <p className="mt-4 text-sm text-gray-600">{lesson.description}</p>}
+          {lesson?.description && <p className="mt-4 text-sm text-muted-foreground">{lesson.description}</p>}
 
           {lesson?.materials && lesson.materials.length > 0 && (
             <div className="mt-4">
@@ -128,8 +129,14 @@ export default function LessonPlayerPage() {
               <ul className="space-y-1">
                 {lesson.materials.map((m) => (
                   <li key={m.id}>
-                    <a href={m.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">
-                      📄 {m.title}
+                    <a
+                      href={m.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      {m.title}
                     </a>
                   </li>
                 ))}
@@ -137,85 +144,87 @@ export default function LessonPlayerPage() {
             </div>
           )}
 
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex gap-2">
               {prevLesson && (
-                <button
-                  onClick={() => router.push(`/lessons/${prevLesson.id}`)}
-                  className="rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
-                >
-                  ← Oldingi
-                </button>
+                <Button variant="outline" size="sm" onClick={() => router.push(`/lessons/${prevLesson.id}`)}>
+                  <ChevronLeft className="h-4 w-4" /> Oldingi
+                </Button>
               )}
               {nextLesson && (
-                <button
-                  onClick={() => router.push(`/lessons/${nextLesson.id}`)}
-                  className="rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
-                >
-                  Keyingi →
-                </button>
+                <Button variant="outline" size="sm" onClick={() => router.push(`/lessons/${nextLesson.id}`)}>
+                  Keyingi <ChevronRight className="h-4 w-4" />
+                </Button>
               )}
             </div>
-            <button
+            <Button
               onClick={markComplete}
-              disabled={completing || completed}
-              className="rounded-md bg-green-600 px-5 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              loading={completing}
+              disabled={completed}
+              variant={completed ? 'secondary' : 'default'}
+              className={completed ? 'bg-success/10 text-success hover:bg-success/10' : ''}
             >
-              {completed ? '✓ Bajarildi' : completing ? 'Saqlanmoqda...' : "Darsni o'zlashtirdim"}
-            </button>
+              {completed ? "✓ Bajarildi" : "Darsni o'zlashtirdim"}
+            </Button>
           </div>
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
           <div className="mt-10">
-            <h3 className="mb-3 text-lg font-semibold">Savol-javob</h3>
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <MessageSquare className="h-4 w-4" /> Savol-javob
+            </h3>
             <form onSubmit={askQuestion} className="mb-4 flex gap-2">
-              <input
+              <Input
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
                 placeholder="Savolingizni yozing..."
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
               />
-              <button className="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">Yuborish</button>
+              <Button type="submit">Yuborish</Button>
             </form>
             <div className="space-y-3">
               {questions.map((q) => (
-                <div key={q.id} className="rounded-md border bg-white p-3">
-                  <p className="text-sm font-medium">{q.user.fullName}</p>
-                  <p className="text-sm text-gray-700">{q.text}</p>
-                  {q.answers.map((a) => (
-                    <div key={a.id} className="mt-2 rounded-md bg-indigo-50 p-2 text-sm text-indigo-800">
-                      👨‍🏫 {a.text}
-                    </div>
-                  ))}
-                </div>
+                <Card key={q.id}>
+                  <CardContent className="p-3">
+                    <p className="text-sm font-medium">{q.user.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{q.text}</p>
+                    {q.answers.map((a) => (
+                      <div key={a.id} className="mt-2 rounded-md bg-accent p-2 text-sm text-accent-foreground">
+                        👨‍🏫 {a.text}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
               ))}
-              {questions.length === 0 && <p className="text-sm text-gray-400">Hali savollar yo&apos;q.</p>}
+              {questions.length === 0 && <p className="text-sm text-muted-foreground">Hali savollar yo&apos;q.</p>}
             </div>
           </div>
         </div>
 
         <div>
-          <div className="rounded-lg border bg-white p-4">
-            <h3 className="mb-3 text-sm font-semibold text-gray-700">Kurs dasturi</h3>
-            <div className="max-h-[70vh] space-y-3 overflow-y-auto">
-              {course?.modules.map((m) => (
-                <div key={m.id}>
-                  <p className="mb-1 text-xs font-semibold uppercase text-gray-400">{m.title}</p>
-                  {m.lessons.map((l) => (
-                    <Link
-                      key={l.id}
-                      href={`/lessons/${l.id}`}
-                      className={`block rounded-md px-2 py-1.5 text-sm ${
-                        l.id === params.id ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {l.title}
-                    </Link>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+          <Card className="sticky top-20">
+            <CardContent className="p-4">
+              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Kurs dasturi</h3>
+              <div className="max-h-[70vh] space-y-3 overflow-y-auto">
+                {course?.modules.map((m) => (
+                  <div key={m.id}>
+                    <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{m.title}</p>
+                    {m.lessons.map((l) => (
+                      <Link
+                        key={l.id}
+                        href={`/lessons/${l.id}`}
+                        className={
+                          l.id === params.id
+                            ? 'block rounded-md bg-accent px-2 py-1.5 text-sm font-medium text-accent-foreground'
+                            : 'block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent'
+                        }
+                      >
+                        {l.title}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppShell>

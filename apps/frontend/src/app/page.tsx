@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 
 export default function Home() {
@@ -17,5 +18,9 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div className="flex min-h-screen items-center justify-center text-gray-400">Yuklanmoqda...</div>;
+  return (
+    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+      <Loader2 className="h-6 w-6 animate-spin" />
+    </div>
+  );
 }

@@ -2,22 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 222 20% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 20% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 20% 14%;
+
+    --primary: 243 75% 59%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 222 20% 20%;
+
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 243 60% 96%;
+    --accent-foreground: 243 75% 40%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 40%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 20% 14%;
+
+    --border: 220 16% 90%;
+    --input: 220 16% 88%;
+    --ring: 243 75% 59%;
+
+    --radius: 0.65rem;
+  }
+
+  .dark {
+    --background: 224 24% 8%;
+    --foreground: 210 20% 96%;
+
+    --card: 224 20% 11%;
+    --card-foreground: 210 20% 96%;
+
+    --popover: 224 20% 11%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 243 82% 68%;
+    --primary-foreground: 224 24% 10%;
+
+    --secondary: 222 18% 16%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 222 18% 16%;
+    --muted-foreground: 220 10% 65%;
+
+    --accent: 243 40% 20%;
+    --accent-foreground: 243 82% 82%;
+
+    --destructive: 0 62% 55%;
+    --destructive-foreground: 210 20% 96%;
+
+    --success: 142 60% 45%;
+    --success-foreground: 210 20% 96%;
+
+    --warning: 38 85% 55%;
+    --warning-foreground: 224 24% 10%;
+
+    --border: 222 18% 20%;
+    --input: 222 18% 20%;
+    --ring: 243 82% 68%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  }
 }
 
 @layer utilities {

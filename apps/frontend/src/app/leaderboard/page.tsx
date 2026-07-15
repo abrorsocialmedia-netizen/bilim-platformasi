@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Flame, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface LeaderboardRow {
   rank: number;
@@ -31,51 +35,65 @@ export default function LeaderboardPage() {
 
   return (
     <AppShell roles={['student', 'teacher']}>
-      <h1 className="mb-6 text-2xl font-bold">Peshqadamlar reytingi</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Peshqadamlar reytingi</h1>
 
       {stats && (
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatTile label="Jami XP" value={stats.totalXp} />
           <StatTile label="O'rin" value={stats.rank ?? '-'} />
-          <StatTile label="Streak" value={`${stats.streakDays} kun`} />
+          <StatTile label="Streak" value={`${stats.streakDays} kun`} icon={<Flame className="h-4 w-4 text-warning" />} />
           <StatTile label="Tugatilgan darslar" value={stats.completedLessons} />
         </div>
       )}
 
       {stats && <ActivityHeatmap data={stats.heatmap} />}
 
-      <div className="mt-8 overflow-hidden rounded-lg border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-left text-gray-500">
-            <tr>
-              <th className="px-4 py-2">#</th>
-              <th className="px-4 py-2">Ism</th>
-              <th className="px-4 py-2">XP</th>
-              <th className="px-4 py-2">Streak</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card className="mt-8">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-14">#</TableHead>
+              <TableHead>Ism</TableHead>
+              <TableHead>XP</TableHead>
+              <TableHead>Streak</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((r) => (
-              <tr key={r.rank} className="border-t">
-                <td className="px-4 py-2 font-medium">{r.rank}</td>
-                <td className="px-4 py-2">{r.fullName}</td>
-                <td className="px-4 py-2">{r.totalXp}</td>
-                <td className="px-4 py-2">{r.streakDays} kun</td>
-              </tr>
+              <TableRow key={r.rank}>
+                <TableCell className="font-medium">
+                  {r.rank <= 3 ? <Trophy className="h-4 w-4 text-warning" /> : r.rank}
+                </TableCell>
+                <TableCell className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                      {r.fullName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {r.fullName}
+                </TableCell>
+                <TableCell>{r.totalXp}</TableCell>
+                <TableCell>{r.streakDays} kun</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </AppShell>
   );
 }
 
-function StatTile({ label, value }: { label: string; value: string | number }) {
+function StatTile({ label, value, icon }: { label: string; value: string | number; icon?: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-white p-4 text-center">
-      <p className="text-2xl font-bold text-indigo-600">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{label}</p>
-    </div>
+    <Card>
+      <CardContent className="flex flex-col items-center gap-1 py-4 text-center">
+        <div className="flex items-center gap-1.5 text-2xl font-bold text-primary">
+          {icon}
+          {value}
+        </div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -88,24 +106,26 @@ function ActivityHeatmap({ data }: { data: { date: string; minutes: number }[] }
   });
 
   function colorFor(minutes: number) {
-    if (!minutes) return 'bg-gray-100';
-    if (minutes < 15) return 'bg-indigo-200';
-    if (minutes < 45) return 'bg-indigo-400';
-    return 'bg-indigo-600';
+    if (!minutes) return 'bg-muted';
+    if (minutes < 15) return 'bg-primary/30';
+    if (minutes < 45) return 'bg-primary/60';
+    return 'bg-primary';
   }
 
   return (
-    <div>
-      <h3 className="mb-2 text-sm font-semibold text-gray-700">Faollik (oxirgi 60 kun)</h3>
-      <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto">
-        {days.map((d) => (
-          <div
-            key={d.toISOString()}
-            title={d.toLocaleDateString('uz-UZ')}
-            className={`h-3 w-3 rounded-sm ${colorFor(map.get(d.toDateString()) ?? 0)}`}
-          />
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">Faollik (oxirgi 60 kun)</h3>
+        <div className="grid grid-flow-col grid-rows-7 gap-1 overflow-x-auto">
+          {days.map((d) => (
+            <div
+              key={d.toISOString()}
+              title={d.toLocaleDateString('uz-UZ')}
+              className={`h-3 w-3 rounded-sm ${colorFor(map.get(d.toDateString()) ?? 0)}`}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

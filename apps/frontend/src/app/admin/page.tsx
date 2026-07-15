@@ -1,8 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Award, BookOpen, Clock, GraduationCap, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AnalyticsDto {
   totalStudents: number;
@@ -22,49 +27,73 @@ export default function AdminDashboardPage() {
 
   return (
     <AppShell roles={['admin']}>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
-      {data && (
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Dashboard</h1>
+      {!data ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+      ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-            <Tile label="O'quvchilar" value={data.totalStudents} />
-            <Tile label="Faol dostuplar" value={data.activeEnrollments} />
-            <Tile label="Tasdiq kutilmoqda" value={data.pendingEnrollments} highlight />
-            <Tile label="Nashr etilgan kurslar" value={data.publishedCourses} />
-            <Tile label="Berilgan sertifikatlar" value={data.certificatesIssued} />
+            <Tile icon={<Users className="h-4 w-4" />} label="O'quvchilar" value={data.totalStudents} />
+            <Tile icon={<GraduationCap className="h-4 w-4" />} label="Faol dostuplar" value={data.activeEnrollments} />
+            <Tile icon={<Clock className="h-4 w-4" />} label="Tasdiq kutilmoqda" value={data.pendingEnrollments} highlight />
+            <Tile icon={<BookOpen className="h-4 w-4" />} label="Nashr etilgan kurslar" value={data.publishedCourses} />
+            <Tile icon={<Award className="h-4 w-4" />} label="Berilgan sertifikatlar" value={data.certificatesIssued} />
           </div>
 
-          <h2 className="mb-3 mt-8 text-lg font-semibold">Kurslar bo&apos;yicha tugatish statistikasi</h2>
-          <div className="overflow-hidden rounded-lg border bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left text-gray-500">
-                <tr>
-                  <th className="px-4 py-2">Kurs</th>
-                  <th className="px-4 py-2">O&apos;quvchilar</th>
-                  <th className="px-4 py-2">O&apos;rtacha progress</th>
-                </tr>
-              </thead>
-              <tbody>
+          <h2 className="mb-3 mt-8 text-lg font-semibold tracking-tight">Kurslar bo&apos;yicha tugatish statistikasi</h2>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kurs</TableHead>
+                  <TableHead>O&apos;quvchilar</TableHead>
+                  <TableHead className="w-64">O&apos;rtacha progress</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.courseCompletion.map((c) => (
-                  <tr key={c.courseId} className="border-t">
-                    <td className="px-4 py-2">{c.courseTitle}</td>
-                    <td className="px-4 py-2">{c.studentsCount}</td>
-                    <td className="px-4 py-2">{c.averageProgress}%</td>
-                  </tr>
+                  <TableRow key={c.courseId}>
+                    <TableCell className="font-medium">{c.courseTitle}</TableCell>
+                    <TableCell>{c.studentsCount}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress value={c.averageProgress} className="h-1.5" />
+                        <span className="text-xs text-muted-foreground">{c.averageProgress}%</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </AppShell>
   );
 }
 
-function Tile({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+function Tile({
+  icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  highlight?: boolean;
+}) {
   return (
-    <div className={`rounded-lg border p-4 text-center ${highlight ? 'bg-amber-50' : 'bg-white'}`}>
-      <p className={`text-2xl font-bold ${highlight ? 'text-amber-600' : 'text-indigo-600'}`}>{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{label}</p>
-    </div>
+    <Card className={highlight ? 'border-warning/40 bg-warning/5' : ''}>
+      <CardContent className="flex flex-col items-center gap-1 py-5 text-center">
+        <div className={highlight ? 'text-warning' : 'text-primary'}>{icon}</div>
+        <p className={`text-2xl font-bold ${highlight ? 'text-warning' : 'text-primary'}`}>{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
   );
 }

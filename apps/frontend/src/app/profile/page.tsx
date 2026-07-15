@@ -1,8 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Send } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface MeDto {
   id: string;
@@ -16,8 +24,6 @@ interface MeDto {
 export default function ProfilePage() {
   const [me, setMe] = useState<MeDto | null>(null);
   const [form, setForm] = useState({ fullName: '', phone: '' });
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [telegramLink, setTelegramLink] = useState<string | null>(null);
 
@@ -31,13 +37,11 @@ export default function ProfilePage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setError('');
-    setMessage('');
     try {
       await api.patch('/me', form);
-      setMessage('Profil yangilandi');
+      toast.success('Profil yangilandi');
     } catch (err) {
-      setError(apiErrorMessage(err));
+      toast.error(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -50,54 +54,46 @@ export default function ProfilePage() {
 
   return (
     <AppShell roles={['student', 'teacher']}>
-      <h1 className="mb-6 text-2xl font-bold">Profil</h1>
-      <div className="max-w-lg rounded-lg border bg-white p-6">
-        <form onSubmit={save} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm text-gray-500">Email</label>
-            <input disabled value={me?.email ?? ''} className="w-full rounded-md border bg-gray-50 px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-gray-500">To&apos;liq ism</label>
-            <input
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm text-gray-500">Telefon</label>
-            <input
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
-          </div>
-          {message && <p className="text-sm text-green-700">{message}</p>}
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            disabled={saving}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {saving ? 'Saqlanmoqda...' : 'Saqlash'}
-          </button>
-        </form>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Profil</h1>
+      <Card className="max-w-lg">
+        <CardContent className="pt-6">
+          <form onSubmit={save} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input disabled value={me?.email ?? ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="fullName">To&apos;liq ism</Label>
+              <Input id="fullName" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">Telefon</Label>
+              <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <Button type="submit" loading={saving}>
+              Saqlash
+            </Button>
+          </form>
 
-        <div className="mt-6 border-t pt-6">
-          <h2 className="mb-2 text-sm font-semibold">Telegram</h2>
-          {me?.telegramLinked ? (
-            <p className="text-sm text-green-600">✓ Telegram ulangan</p>
-          ) : telegramLink ? (
-            <a href={telegramLink} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline">
-              {telegramLink}
-            </a>
-          ) : (
-            <button onClick={connectTelegram} className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
-              Telegramni ulash
-            </button>
-          )}
-        </div>
-      </div>
+          <Separator className="my-6" />
+
+          <div>
+            <h2 className="mb-2 text-sm font-semibold">Telegram</h2>
+            {me?.telegramLinked ? (
+              <Badge variant="success">✓ Telegram ulangan</Badge>
+            ) : telegramLink ? (
+              <a href={telegramLink} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
+                {telegramLink}
+              </a>
+            ) : (
+              <Button onClick={connectTelegram} variant="outline" size="sm">
+                <Send className="h-4 w-4" />
+                Telegramni ulash
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </AppShell>
   );
 }

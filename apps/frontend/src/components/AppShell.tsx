@@ -12,8 +12,10 @@ export function AppShell({
 }) {
   return (
     <AuthGuard roles={roles}>
-      <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <div className="min-h-screen bg-muted/30">
+        <Navbar />
+        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      </div>
     </AuthGuard>
   );
 }

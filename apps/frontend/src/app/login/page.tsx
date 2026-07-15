@@ -4,9 +4,16 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
+import { toast } from 'sonner';
+import { Laptop } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
 import { AuthCard } from '@/components/AuthCard';
+import { PasswordInput } from '@/components/PasswordInput';
 import { useAuthStore } from '@/store/auth';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface DeviceInfo {
   id: string;
@@ -19,7 +26,6 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [deviceLimit, setDeviceLimit] = useState<DeviceInfo[] | null>(null);
 
@@ -34,7 +40,6 @@ function LoginForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await doLogin('/auth/login');
@@ -45,7 +50,7 @@ function LoginForm() {
       if (data?.code === 'DEVICE_LIMIT_REACHED' && data.devices) {
         setDeviceLimit(data.devices);
       } else {
-        setError(apiErrorMessage(err, "Email yoki parol noto'g'ri"));
+        toast.error(apiErrorMessage(err, "Email yoki parol noto'g'ri"));
       }
     } finally {
       setLoading(false);
@@ -53,12 +58,11 @@ function LoginForm() {
   }
 
   async function revokeAndLogin(deviceId: string) {
-    setError('');
     setLoading(true);
     try {
       await doLogin('/auth/login-force', { revokeDeviceId: deviceId });
     } catch (err) {
-      setError(apiErrorMessage(err));
+      toast.error(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -67,63 +71,68 @@ function LoginForm() {
   if (deviceLimit) {
     return (
       <AuthCard title="Qurilmalar limiti">
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="mb-4 text-sm text-muted-foreground">
           Bir vaqtning o&apos;zida faqat 2 ta qurilmadan foydalanish mumkin. Davom etish uchun eski qurilmalardan
           birini chiqaring.
         </p>
         <div className="space-y-2">
           {deviceLimit.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => revokeAndLogin(d.id)}
-              className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm hover:bg-gray-50"
-            >
-              <span>{d.deviceInfo}</span>
-              <span className="text-xs text-red-600">Chiqarish</span>
-            </button>
+            <Card key={d.id} className="p-0">
+              <button
+                onClick={() => revokeAndLogin(d.id)}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm hover:bg-accent"
+              >
+                <span className="flex items-center gap-2">
+                  <Laptop className="h-4 w-4 text-muted-foreground" />
+                  {d.deviceInfo}
+                </span>
+                <span className="text-xs font-medium text-destructive">Chiqarish</span>
+              </button>
+            </Card>
           ))}
         </div>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        <button onClick={() => setDeviceLimit(null)} className="mt-4 text-sm text-gray-500 hover:underline">
+        <Button variant="ghost" onClick={() => setDeviceLimit(null)} className="mt-4 w-full text-muted-foreground">
           Orqaga
-        </button>
+        </Button>
       </AuthCard>
     );
   }
 
   return (
     <AuthCard title="Kirish">
-      {infoMessage && <p className="mb-4 rounded-md bg-green-50 p-2 text-center text-sm text-green-700">{infoMessage}</p>}
+      {infoMessage && (
+        <div className="mb-4 rounded-md bg-success/10 p-2 text-center text-sm text-success">{infoMessage}</div>
+      )}
       <form onSubmit={onSubmit} className="space-y-4">
-        <input
-          required
-          type="email"
-          placeholder="Email"
-          className="w-full rounded-md border px-3 py-2 text-sm"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
-        <input
-          required
-          type="password"
-          placeholder="Parol"
-          className="w-full rounded-md border px-3 py-2 text-sm"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          disabled={loading}
-          className="w-full rounded-md bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? 'Kirilmoqda...' : 'Kirish'}
-        </button>
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            required
+            type="email"
+            placeholder="email@misol.uz"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Parol</Label>
+          <PasswordInput
+            id="password"
+            required
+            value={form.password}
+            onChange={(v) => setForm({ ...form, password: v })}
+          />
+        </div>
+        <Button type="submit" loading={loading} className="w-full">
+          Kirish
+        </Button>
       </form>
       <div className="mt-4 flex justify-between text-sm">
-        <Link href="/register" className="text-indigo-600 hover:underline">
+        <Link href="/register" className="font-medium text-primary hover:underline">
           Ro&apos;yxatdan o&apos;tish
         </Link>
-        <Link href="/forgot-password" className="text-gray-500 hover:underline">
+        <Link href="/forgot-password" className="text-muted-foreground hover:underline">
           Parolni unutdingizmi?
         </Link>
       </div>

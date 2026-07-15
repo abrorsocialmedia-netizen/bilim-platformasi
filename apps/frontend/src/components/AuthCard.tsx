@@ -1,11 +1,19 @@
+import { GraduationCap } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 export function AuthCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-xl border bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-2xl font-bold text-indigo-600">O&apos;quv Platformasi</h1>
-        <h2 className="mb-6 text-center text-lg font-semibold text-gray-800">{title}</h2>
-        {children}
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex items-center gap-2 text-xl font-bold text-primary">
+            <GraduationCap className="h-6 w-6" />
+            O&apos;quv Platformasi
+          </div>
+          <CardTitle className="text-lg">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>{children}</CardContent>
+      </Card>
     </div>
   );
 }

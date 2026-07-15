@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Award } from 'lucide-react';
 import { api } from '@/lib/api';
 import { AppShell } from '@/components/AppShell';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface CertificateDto {
   id: string;
@@ -25,22 +28,36 @@ export default function CertificatesPage() {
 
   return (
     <AppShell roles={['student', 'teacher']}>
-      <h1 className="mb-6 text-2xl font-bold">Sertifikatlarim</h1>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Sertifikatlarim</h1>
       {loading ? (
-        <p className="text-gray-400">Yuklanmoqda...</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
       ) : certificates.length === 0 ? (
-        <p className="text-gray-500">Hali sertifikatlaringiz yo&apos;q. Sertifikatli kursni 100% tugating.</p>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <Award className="h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Hali sertifikatlaringiz yo&apos;q. Sertifikatli kursni 100% tugating.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {certificates.map((c) => (
-            <div key={c.id} className="rounded-lg border bg-white p-5">
-              <p className="text-lg font-semibold">🎓 {c.course.title}</p>
-              <p className="mt-1 text-sm text-gray-500">№ {c.certNumber}</p>
-              <p className="text-sm text-gray-400">{new Date(c.issuedAt).toLocaleDateString('uz-UZ')}</p>
-              {c.pdfUrl && (
-                <span className="mt-3 inline-block text-sm text-indigo-600">PDF tayyor</span>
-              )}
-            </div>
+            <Card key={c.id}>
+              <CardContent className="flex items-start gap-4 p-5">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Award className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold leading-tight">{c.course.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">№ {c.certNumber}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(c.issuedAt).toLocaleDateString('uz-UZ')}</p>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
