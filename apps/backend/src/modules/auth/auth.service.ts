@@ -53,7 +53,8 @@ export class AuthService {
     });
 
     await this.prisma.userStats.create({ data: { userId: user.id } });
-    await this.mail.sendVerificationCode(user.email, code);
+    // Emailni fonda yuboramiz — javobni bloklamasin (SMTP sekin bo'lsa ham)
+    void this.mail.sendVerificationCode(user.email, code);
 
     return {
       message: 'Tasdiqlash kodi emailingizga yuborildi',
