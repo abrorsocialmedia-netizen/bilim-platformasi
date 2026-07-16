@@ -21,8 +21,8 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await api.post('/auth/register', form);
-      toast.success('Tasdiqlash kodi emailingizga yuborildi');
-      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      toast.success("Ro'yxatdan muvaffaqiyatli o'tdingiz. Endi kiring.");
+      router.push('/login');
     } catch (err) {
       toast.error(apiErrorMessage(err, "Ro'yxatdan o'tishda xatolik"));
     } finally {

@@ -40,24 +40,29 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const code = this.generateCode();
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
         email: dto.email,
         phone: dto.phone,
         passwordHash,
-        emailVerificationCode: code,
-        emailVerificationExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        // Email tasdiqlash vaqtincha o'chirilgan (o'z domenimiz bo'lmagani uchun).
+        // Foydalanuvchi ro'yxatdan o'tishi bilan hisob darhol faollashadi.
+        emailVerified: true,
       },
     });
 
     await this.prisma.userStats.create({ data: { userId: user.id } });
-    // Emailni fonda yuboramiz — javobni bloklamasin (SMTP sekin bo'lsa ham)
-    void this.mail.sendVerificationCode(user.email, code);
+
+    // Admin yangi o'quvchi haqida xabardor bo'lsin
+    await this.notifications.createForRole(
+      'admin',
+      'new_student',
+      `${user.fullName} (${user.email}) ro'yxatdan o'tdi.`,
+    );
 
     return {
-      message: 'Tasdiqlash kodi emailingizga yuborildi',
+      message: "Ro'yxatdan muvaffaqiyatli o'tdingiz. Endi kirishingiz mumkin.",
       userId: user.id,
     };
   }
