@@ -41,7 +41,7 @@ export default function DevicesPage() {
     <AppShell roles={['student', 'teacher']}>
       <h1 className="mb-2 text-2xl font-bold tracking-tight">Qurilmalar</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Bir vaqtning o&apos;zida maksimal 2 ta qurilmadan foydalanishingiz mumkin.
+        Bir vaqtning o&apos;zida faqat bitta qurilmadan foydalanishingiz mumkin.
       </p>
       {loading ? (
         <div className="space-y-2">

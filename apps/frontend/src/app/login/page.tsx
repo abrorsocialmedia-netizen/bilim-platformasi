@@ -72,7 +72,7 @@ function LoginForm() {
     return (
       <AuthCard title="Qurilmalar limiti">
         <p className="mb-4 text-sm text-muted-foreground">
-          Bir vaqtning o&apos;zida faqat 2 ta qurilmadan foydalanish mumkin. Davom etish uchun eski qurilmalardan
+          Qurilmalar limitiga yetdingiz. Davom etish uchun eski qurilmalardan
           birini chiqaring.
         </p>
         <div className="space-y-2">
