@@ -26,11 +26,12 @@ export function ProtectedVideoPlayer({ src, watermarkText }: { src: string; wate
   }, [src]);
 
   useEffect(() => {
+    // Watermark har 3 daqiqada bir marta joyini o'zgartiradi (chalg'itmasligi uchun)
     const interval = setInterval(() => {
       const top = `${Math.floor(Math.random() * 70) + 5}%`;
       const left = `${Math.floor(Math.random() * 70) + 5}%`;
       setWmPosition({ top, left });
-    }, 4000);
+    }, 180000);
     return () => clearInterval(interval);
   }, []);
 
