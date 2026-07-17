@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { GraduationCap, LogOut, User as UserIcon } from 'lucide-react';
+import { GraduationCap, LogOut, Menu, User as UserIcon, X } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
 
@@ -77,39 +79,75 @@ export function Navbar() {
           </div>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 px-2">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(user.fullName)}</AvatarFallback>
-              </Avatar>
-              <span className="hidden text-sm font-medium sm:inline">{user.fullName}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {user.role !== 'admin' && (
-              <DropdownMenuItem asChild>
-                <Link href="/profile" className="cursor-pointer">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  Profil
-                </Link>
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 px-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="bg-primary/10 text-xs text-primary">{initials(user.fullName)}</AvatarFallback>
+                </Avatar>
+                <span className="hidden text-sm font-medium sm:inline">{user.fullName}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {user.role !== 'admin' && (
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="cursor-pointer">
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    Profil
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onClick={() => {
+                  logout();
+                  router.replace('/login');
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Chiqish
               </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              className="cursor-pointer text-destructive focus:text-destructive"
-              onClick={() => {
-                logout();
-                router.replace('/login');
-              }}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Chiqish
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mobil (telefon) uchun menyu tugmasi */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label="Menyu"
+            onClick={() => setMobileOpen((v) => !v)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Mobil menyu paneli — faqat telefonda va ochilganda ko'rinadi */}
+      {mobileOpen && (
+        <div className="border-t px-4 py-2 md:hidden">
+          <div className="flex flex-col gap-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  pathname === link.href
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
