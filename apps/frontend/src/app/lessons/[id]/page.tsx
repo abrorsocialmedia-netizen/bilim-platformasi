@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { ArrowLeft, ChevronLeft, ChevronRight, FileText, MessageSquare } from 'lucide-react';
 import { api, apiErrorMessage } from '@/lib/api';
+import { useAuthStore } from '@/store/auth';
 import { AppShell } from '@/components/AppShell';
 import { ProtectedVideoPlayer } from '@/components/ProtectedVideoPlayer';
 import type { CourseDetail, LessonDto } from '@/lib/types';
@@ -25,6 +26,8 @@ interface QuestionDto {
 export default function LessonPlayerPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuthStore();
+  const canAnswer = user?.role === 'teacher' || user?.role === 'admin';
 
   const [lesson, setLesson] = useState<(LessonDto & { module: { course: { id: string; title: string } } }) | null>(null);
   const [course, setCourse] = useState<CourseDetail | null>(null);
@@ -32,6 +35,7 @@ export default function LessonPlayerPage() {
   const [watermark, setWatermark] = useState('');
   const [questions, setQuestions] = useState<QuestionDto[]>([]);
   const [questionText, setQuestionText] = useState('');
+  const [answerText, setAnswerText] = useState<Record<string, string>>({});
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -88,6 +92,25 @@ export default function LessonPlayerPage() {
     const { data } = await api.post(`/lessons/${params.id}/questions`, { text: questionText });
     setQuestions([{ ...data, user: { fullName: 'Siz' }, answers: [] }, ...questions]);
     setQuestionText('');
+  }
+
+  async function submitAnswer(questionId: string) {
+    const text = (answerText[questionId] ?? '').trim();
+    if (!text) return;
+    try {
+      const { data } = await api.post(`/questions/${questionId}/answer`, { text });
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === questionId
+            ? { ...q, answers: [...q.answers, { id: data.id, text: data.text, createdAt: data.createdAt }] }
+            : q,
+        ),
+      );
+      setAnswerText((prev) => ({ ...prev, [questionId]: '' }));
+      toast.success('Javob yuborildi');
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Javob yuborishda xatolik'));
+    }
   }
 
   if (loading) {
@@ -191,6 +214,21 @@ export default function LessonPlayerPage() {
                         👨‍🏫 {a.text}
                       </div>
                     ))}
+                    {canAnswer && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={answerText[q.id] ?? ''}
+                          onChange={(e) =>
+                            setAnswerText((prev) => ({ ...prev, [q.id]: e.target.value }))
+                          }
+                          placeholder="Javob yozing..."
+                          className="h-8 text-sm"
+                        />
+                        <Button type="button" size="sm" onClick={() => submitAnswer(q.id)}>
+                          Javob
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

@@ -42,11 +42,17 @@ export class VideoService {
     const ttl = this.config.get<number>('VIDEO_TOKEN_TTL_SECONDS') ?? 600;
     const url = await this.storage.createReadUrl(lesson.videoRef, ttl);
 
+    // Watermarkda faqat platforma nomi ko'rsatiladi (keyinchalik domenga almashtiriladi)
+    const config = await this.prisma.instanceConfig.findUnique({
+      where: { id: 1 },
+    });
+    const brand = config?.brandName ?? "O'quv Platformasi";
+
     return {
       url,
       expiresIn: ttl,
       watermark: {
-        text: `${user?.fullName ?? ''} · ${user?.email ?? ''} · ${user?.phone ?? ''}`.trim(),
+        text: brand,
       },
     };
   }
